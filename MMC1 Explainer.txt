@@ -1,0 +1,238 @@
+                      ___  _       __            _       _
+     /\/\    /\/\    / __\/ |     /__\_  ___ __ | | __ _(_)_ __   ___ _ __
+    /    \  /    \  / /   | |    /_\ \ \/ / '_ \| |/ _` | | '_ \ / _ \ '__|
+   / /\/\ \/ /\/\ \/ /___ | |   //__  >  <| |_) | | (_| | | | | |  __/ |
+   \/    \/\/    \/\____/ |_|   \__/ /_/\_\ .__/|_|\__,_|_|_| |_|\___|_|
+                                          |_|
+┌───────────────────────────────────────────────────────────────────────────┐
+│The MMC1 was an extremely popular mapper ASIC used in some 390 NES titles. │
+│True to the name, it performed dynamic mapping of the cartridge contents   │
+│into the fixed cartridge window in the NES's CPU and PPU address spaces.   │
+│                                                                           │
+│The MMC1 provides native support for up to 256K of program ROM (PRGROM),   │
+│with a 32K window within the CPU's cartridge region. In one mapping mode,  │
+│the entire 32K window maps to the selected 32K PRGROM "bank". In the other,│
+│16K of the 32K window has a "fixed" mapping, while the mapping of the other│
+│16K can be changed dynamically.                                            │
+│                                                                           │
+│The MMC1 additionally provides native support for 8K of working RAM (WRAM, │
+│also sometimes called PRGRAM). In addition to acting as supplementary RAM  │
+│(since the NES natively has a paltry 2K), many cartridge boards used a     │
+│backup battery to keep the WRAM contents stable, allowing for on-cartridge │
+│persistent save data.                                                      │
+│                                                                           │
+│Finally, the MMC1 supports up to 128K of CHR (sprite, technically short for│
+│"character generator") memory (RAM or ROM, sometimes shortened to          │
+│CHRAM/CHROM), with an 8K window in the PPU's cartridge region. The same    │
+│mapping capabilities are provided as for PRGROM, except with 4K / 8K banks,│
+│instead of 16K / 32K banks.                                                │
+│                                                                           │
+│These capabilities are configured through four registers via a             │
+│memory-mapped serial interface, with the serial "port" for each register   │
+│mapped to a portion of the PRGROM window. Since PRGROM is read-only and the│
+│serial interface is write-only, this does not cause any conflicts.         │
+│                                                                           │
+│There were actually several versions of the MMC1 ASIC, differing (as far as│
+│we know) in whether or not WRAM can be enabled/disabled, and whether it is │
+│enabled or disabled by default. This isn't really of much concern as far as│
+│emulation goes, with only two known games ("Tatakae!! Ramen Man: Sakuretsu │
+│Choujin 102 Gei" and "The Money Game") relying on the WRAM not being       │
+│disable-able.                                                              │
+│                                                                           │
+│Of bigger concern to emulation is the variation in cartridge boards using  │
+│the MMC1. At the electronic level, the MMC1 provided input pins connecting │
+│to (among other things) the high two bits of the CPU's address bus, and the│
+│high 3 bits of the PPU's address bus. Output pins provided the higher      │
+│address bits, to be wired to RAM/ROM. Boards were fairly consistent in the │
+│hookup of the input pins, but varied in how they used the output pins. In  │
+│particular, some boards repurpose CHR address outputs.                     │
+│                                                                           │
+│The rest of this "comment" serves to document and describe aspects of the  │
+│MMC1 in further detail, both for the primary author's reference as he      │
+│writes an implementation, and for any future code-divers who want to modify│
+│(or need to fix) something.                                                │
+└───────────────────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃       CPU Memory Map       ┃        ┃        Writing to Registers         ┃
+┣━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┫0x10000 ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│             │  reg3 Port   │        │The 4 control registers are each 5   │
+│ High PRGROM │    (8 KB)    │        │bits wide, and share a common serial │
+│             ├──────────────┤0xE000  │interface for updating their contents│
+│   (16 KB)   │  reg2 Port   │        │from the CPU.                        │
+│             │    (8 KB)    │        │                                     │
+├─────────────┼──────────────┤0xC000  │This serial interface is backed by a │
+│             │  reg1 Port   │        │shift register, and mapped on top of │
+│ Low PRGROM  │    (8 KB)    │        │the entire PRGROM window. Writing any│
+│             ├──────────────┤0xA000  │byte with its 7th bit set (i.e.      │
+│   (16 KB)   │  reg0 Port   │        │greater than decimal 127) resets the │
+│             │    (8 KB)    │        │interface and clears the shift       │
+├─────────────┴──────────────┤0x8000  │register. Writing a byte with its 7th│
+│      WRAM (Optional)       │        │bit clear results in its LSB being   │
+│           (8 KB)           │        │shifted in.                          │
+├────────────────────────────┤0x6000  │                                     │
+│    Non-Cartridge Space     │        │After 5 bits have been shifted in    │
+│          (24 KB)           │        │(shifting occurs left-to-right, MSB  │
+└────────────────────────────┘0x0000  │to LSB), one of the four registers is│
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓        │set with this 5-bit word; the        │
+┃        reg0 Layout         ┃        │particular register is selected by   │
+┃      "Mode Register"       ┃        │bits [14:13] of the address of the   │
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫        │5th write.                           │
+│ 0 -> 8KB CHR Switching     │        │                                     │
+│ 1 -> 4KB CHR Switching     │[4]     │In practice, a NES programmer can    │
+├────────────────────────────┤        │view each register as having its own │
+│ 0 -> 32KB PRGROM Switching │        │8K serial-interface window, and sane │
+│ 1 -> 16KB PRGROM Switching │[3]     │non-obfuscated code likely does, but │
+├────────────────────────────┤        │for completeness of emulation we must│
+│ 0 -> High PRGROM Switching │        │mimic the underlying FSM.            │
+│ 1 ->  Low PRGROM Switching │[2]     │                                     │
+├────────────────────────────┤        │When two writes to the serial        │
+│ 0 -> One-Screen Mirroring  │        │interface occur on successive clock  │
+│         (Nametable 0)      │        │cycles, the second write is ignored. │
+│ 1 -> One-Screen Mirroring  │        │This means that execution of a       │
+│         (Nametable 1)      │[1:0]   │read-modify-write instruction (like  │
+│ 2 -> Vertical Mirroring    │        │INC) is equivalent to a write of the │
+│ 3 -> Horizontal Mirroring  │        │addressed ROM byte.                  │
+└────────────────────────────┘        └─────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                           Other MMC1 Registers                            ┃
+┣━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│ reg1 │If using 4K CHR switching, [4:0] is the low CHR bank #.             │
+│      │If using 8K CHR switching, [4:1] is the bank #, [0] is ignored.     │
+├──────┼────────────────────────────────────────────────────────────────────┤
+│ reg2 │If using 4K CHR switching, [4:0] is the high CHR bank #.            │
+│      │Ignored if using 8K CHR switching.                                  │
+├──────┼────────────────────────────────────────────────────────────────────┤
+│      │If using 32K PRGROM switching, [3:1] is the bank #, [0] is ignored. │
+│      │                                                                    │
+│ reg3 │If using 16 KB PRGROM switching, [3:0] is the bank #, with window   │
+│      │selection done by reg0[2].                                          │
+│      │                                                                    │
+│      │[5] is the WRAM enable/disable, active low (ignored on MMC1A).      │
+├──────┴────────────────────────────────────────────────────────────────────┤
+│In effect, the contents of reg1 and reg2 are the high 5 bits of the final  │
+│CHR address. The MMC1 just selects which register to use based on the input│
+│address and mode settings, and forces 8K alignment when using 8K switching.│
+│                                                                           │
+│An analogous story follows for reg3, and though reg3[5] is labeled and     │
+│intended as a WRAM enable/disable, it directly drives an output pin just   │
+│like reg1[5] or reg2[5] (with the exception of the first version of the    │
+│MM1C, which forced the output of that pin low irrespective of reg3[5]).    │
+└───────────────────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             Known NES-SxROM Variants (Boards using the MMC1)              ┃
+┃          [https://wiki.nesdev.com/w/index.php/SxROM#Board_types]          ┃
+┣━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┫
+┃      ID       ┃       PRGROM       ┃    CHR RAM/ROM     ┃      WRAM       ┃
+┣━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━┫
+│       A       │        64K         │   16/32/64K ROM    │       8K        │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       B       │        64K         │   16/32/64K ROM    │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       C       │        64K         │      128K ROM      │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      C1       │        64K         │      128K ROM      │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       E       │        32K         │   16/32/64K ROM    │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       F       │      128/256K      │   16/32/64K ROM    │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      F1       │        256K        │      64K ROM       │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│     FEXP¹     │        256K        │      64K ROM       │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       G       │      128/256K      │     8K RAM/ROM     │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       H       │        32K         │      32K ROM       │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      H1       │        32K         │      32K ROM       │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       I       │        32K         │   16/32/64K ROM    │       8K        │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       J       │      128/256K      │   16/32/64K ROM    │       8K        │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       K       │      128/256K      │      128K ROM      │       8K        │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       L       │      128/256K      │      128K ROM      │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      L1       │    64/128/256K     │      128K ROM      │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      L2       │      128/256K      │      128K ROM      │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      L3       │        256K        │      128K ROM      │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      LR       │      128/256K      │      128K ROM      │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│       M       │        256K        │       8K RAM       │      None       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      N²       │      128/256K      │     8K RAM/ROM     │       8K        │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      O³       │      128/256K      │     8K RAM/ROM     │       16K       │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      U⁴       │        512K        │     8K RAM/ROM     │       8K        │
+├───────────────┼────────────────────┼────────────────────┼─────────────────┤
+│      X⁵       │    128/256/512K    │     8K RAM/ROM     │       32K       │
+└───────────────┴────────────────────┴────────────────────┴─────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃          MMC1 Variants          ┃ ┃        ¹SFEXPROM Special Notes        ┃
+┣━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┫ ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│ MMC1A  │WRAM cannot be disabled.│ │The SFEXPROM has a "patcher" chip that │
+├────────┼────────────────────────┤ │intercepts read accesses to the PRGROM.│
+│        │   WRAM is enabled by   │ │Reading at offset 0x180 in each 8K bank│
+│ MMC1Bx │  default, and can be   │ │yields 0x05, even though the value     │
+│        │       disabled.        │ │burned onto the ROM is 0x60. It looks  │
+├────────┼────────────────────────┤ │like there might be some runtime memory│
+│        │  WRAM is disabled by   │ │accesses required to "activate" the    │
+│ MMC1C  │  default, and can be   │ │patcher, which would make sense if this│
+│        │        enabled.        │ │is a copy-protection attempt.          │
+└────────┴────────────────────────┘ └───────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                           ²SNROM Special Notes                            ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│The highest PPU address bit output of the MMC1 (reg1[4]/reg2[4]) is wired  │
+│as an extra WRAM enable/disable signal, also active low, and must be       │
+│asserted low along with the normal WRAM enable/disable bit for WRAM to     │
+│work.                                                                      │
+│It would be possible to set reg1[4] and reg2[4] to different values, in    │
+│which case (with 4k CHR switching) WRAM would only be enabled when the PPU │
+│was accessing particular CHR banks.                                        │
+└───────────────────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                           ³SOROM Special Notes                            ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│This board has 16K of WRAM, double the supported amount, so the second     │
+│highest PPU address bit output of the MMC1 (reg1[3]/reg2[3]) is used as a  │
+│WRAM bank select.                                                          │
+│Like with the SNROM, it would be possible to set reg1[3] and reg2[3] to    │
+│different values, causing the WRAM bank to switch depending on what memory │
+│the PPU is accessing.                                                      │
+└───────────────────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                           ⁴SUROM Special Notes                            ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│This board has 512K of PRGROM, double the supported amount, so the highest │
+│PPU address bit output of the MMC1 (reg1[4]/reg2[4]) is wired as a 256K    │
+│bank select for the PRGROM.                                                │
+│Like with the SNROM and SOROM, reg1[4] and reg2[4] could be set to         │
+│different values while using 4K CHR switching, to interesting effect.      │
+└───────────────────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                           ⁵SXROM Special Notes                            ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│This board supports up to 512K of PRGROM and a whopping 32K of WRAM.       │
+│Accordingly, it pulls out all the stops of the SOROM and SUROM, and a *bit*│
+│more. Get it? Oh, I amuse myself.                                          │
+│The SXROM uses the highest PPU address bit output of the MMC1              │
+│(reg1[4]/reg2[4]) to select between the two 256K banks of PRGROM, along    │
+│with the next tow bits (reg1[3:2]/reg2[3:2]) to select between the four 8K │
+│banks of WRAM. Poor reg1[1] and reg2[1] still don't get any use.           │
+└───────────────────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Sources (Thank You!) ┃                                                    ┃
+┣━━━━━━━━━━━━━━━━━━━━━━┛                                                    ┃
+┃ [https://wiki.nesdev.com/w/index.php/MMC1]  [http://nesdev.com/mmc1.txt]  ┃
+┃               [http://kevtris.org/mappers/mmc1/index.html]                ┃
+┃                [https://wiki.nesdev.com/w/index.php/SxROM]                ┃
+┃              [http://forums.nesdev.com/viewtopic.php?t=1371]              ┃
+┃             [https://wiki.nesdev.com/w/index.php/MMC1_pinout]             ┃
+┃ [https://wiki.nesdev.com/w/index.php/CPU_pin_out_and_signal_description]  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
