@@ -137,7 +137,7 @@ class BuildTest(Test):
    def make(self, files=[], required=True):
       failures = list()
       self.log("Trying to build project using make")
-      status = self.run_util(["make", "REFERENCE=1", "MODE=DEBUG"])
+      status = self.run_util(["make", "MODE=DEBUG"])
       if status != 0:
          failures.append("make failed (error " + str(status) + ")")
       missing_files = []
