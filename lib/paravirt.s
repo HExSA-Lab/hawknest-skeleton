@@ -5,9 +5,10 @@
 ; int __fastcall__ close (int fd);
 ; int __fastcall__ read (int fd, void* buf, unsigned count);
 ; int __fastcall__ write (int fd, const void* buf, unsigned count);
+; int __fastcall__ break (...);
+; int __fastcall__ dump (...);
 ;
-
-        .export         args, exit, _open, _close, _read, _write
+        .export         args, exit, _open, _close, _read, _write, _break, _dump
 
 ;args            := $FFF0
 ;exit            := $FFF1
