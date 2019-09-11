@@ -137,7 +137,7 @@ class BuildTest(Test):
    def make(self, files=[], required=True):
       failures = list()
       self.log("Trying to build project using make")
-      status = self.run_util(["make", "MODE=OPT"])
+      status = self.run_util(["make", "REFERENCE=1", "MODE=DEBUG"])
       if status != 0:
          failures.append("make failed (error " + str(status) + ")")
       missing_files = []
@@ -203,7 +203,7 @@ class HawknestTest(BuildTest, Test):
             self.fail("tester failed due to internal error")
             return
 
-        args = ["bin/hawknest-gcc-opt",  "bin/" + self.name]
+        args = ["bin/hawknest-gcc-debug",  "bin/" + self.name]
 
         tmpname = ('tmp' + self.name + '.out')
         of = open(tmpname, "w+")
@@ -477,7 +477,7 @@ if __name__ == "__main__":
 
         test_cnt += 1
 
-    test_val = 100.0/test_cnt
+    test_val = 100/test_cnt
 
     for test in all_tests:
         test.point_val = test_val
