@@ -88,7 +88,7 @@ static inline mos6502_step_result_t
 handle_dump (mos6502_t * cpu)
 {
     uint16_t addr = 0;
-    uint32_t count = 65536;
+    uint32_t count = 12288;
 
     printf("EXIT STATE:\n");
     printf("PC: 0x%04x\n", cpu->pc);
