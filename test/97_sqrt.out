@@ -1,10 +1,10 @@
 EXIT STATE:
-PC: 0xa004
+PC: 0xa037
 SP: 0x00fd
- A: 0x01
+ A: 0xff
  X: 0x00
- Y: 0x00
- P: 0x34
+ Y: 0x04
+ P: 0xb4
   $0000: ff ff ff ff
   $0004: ff ff ff ff
   $0008: ff ff ff ff
@@ -13,7 +13,7 @@ SP: 0x00fd
   $0014: ff ff ff ff
   $0018: ff ff ff ff
   $001c: ff ff ff ff
-  $0020: ff ff ff ff
+  $0020: 04 00 09 00
   $0024: ff ff ff ff
   $0028: ff ff ff ff
   $002c: ff ff ff ff
@@ -132,7 +132,7 @@ SP: 0x00fd
   $01f0: ff ff ff ff
   $01f4: ff ff ff ff
   $01f8: ff ff ff ff
-  $01fc: ff ff ff ff
+  $01fc: 34 a0 ff ff
   $0200: ff ff ff ff
   $0204: ff ff ff ff
   $0208: ff ff ff ff

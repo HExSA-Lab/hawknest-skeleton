@@ -3,6 +3,6 @@
 ; DESC: Transfer from A to X with negative flag
 
 test:
-    lda #$0xff
+    lda #$ff
     tax ; should set neg reg
     TEST_END

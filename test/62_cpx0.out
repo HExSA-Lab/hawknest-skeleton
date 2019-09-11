@@ -1,10 +1,10 @@
 EXIT STATE:
-PC: 0xa004
+PC: 0xa00a
 SP: 0x00fd
- A: 0x01
- X: 0x00
+ A: 0x00
+ X: 0x01
  Y: 0x00
- P: 0x34
+ P: 0x37
   $0000: ff ff ff ff
   $0004: ff ff ff ff
   $0008: ff ff ff ff
@@ -2053,7 +2053,7 @@ SP: 0x00fd
   $1ff4: ff ff ff ff
   $1ff8: ff ff ff ff
   $1ffc: ff ff ff ff
-  $2000: ff ff ff ff
+  $2000: 01 ff ff ff
   $2004: ff ff ff ff
   $2008: ff ff ff ff
   $200c: ff ff ff ff
