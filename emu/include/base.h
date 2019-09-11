@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define HAWKNEST_VERSION_STRING "0.1"
+#define HAWKNEST_VERSION_STRING "2.0"
 
 // These surround string literals with the ANSI escape codes to render text with
 // color on supporting terminal emulators
