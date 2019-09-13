@@ -33,17 +33,39 @@ typedef enum mmc1_chr_switching {
 typedef union mmc1_reg0 {
 	uint8_t val;
 	struct {
-		mmc1_mirroring_t mirroring : 2;
-		mmc1_prgrom_fixation_t prgrom_fixation : 1;
+		mmc1_mirroring_t mirroring               : 2;
+		mmc1_prgrom_fixation_t prgrom_fixation   : 1;
 		mmc1_prgrom_switching_t prgrom_switching : 1;
-		mmc1_chr_switching_t chr_switching : 1;
+		mmc1_chr_switching_t chr_switching       : 1;
 	};
 } mmc1_reg0_t;
+
+typedef union mmc1_reg1 {
+    uint8_t val;
+    struct {
+        uint8_t banksel4k : 5;
+        uint8_t unused4k  : 3;
+    };
+    struct {
+        uint8_t unused8k  : 1;
+        uint8_t banksel8k : 4;
+    };
+} mmc1_reg1_t;
+
+
+typedef union mmc1_reg2 {
+    uint8_t val;
+    struct {
+        uint8_t banksel4k : 5;
+        uint8_t unused4k  : 3;
+    };
+} mmc1_reg2_t;
+
 
 typedef union mmc1_reg3 {
 	uint8_t val;
 	struct {
-		uint8_t banksel : 4;
+		uint8_t banksel    : 4;
 		bool wram_disabled : 1;
 	};
 } mmc1_reg3_t;
@@ -57,8 +79,8 @@ typedef struct mmc1 {
 	// other fields between them, or make any of them bigger than a byte. We
 	// rely on this packed ordering for evil memory reinterpretation hacks.
 	mmc1_reg0_t reg0;
-	uint8_t reg1;
-	uint8_t reg2;
+	mmc1_reg1_t reg1;
+	mmc1_reg2_t reg2;
 	mmc1_reg3_t reg3;
 } mmc1_t;
 

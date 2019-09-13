@@ -56,6 +56,13 @@ mmc1_map_vram (mmc1_t * mmc1, membus_t * bus, memory_t * vram)
 	}
 }
 
+
+/*
+ * Shift reg initial state: Bit 5 is set as a sentinal
+ * 1 0 0 0 0 0
+ * After 5 writes have occured, it will have shifted right by 5 bits:
+ * ? ? ? ? ? 1
+ */
 void
 mmc1_reg_write (mmc1_t * mmc1, size_t regnum, uint8_t val, uint64_t cpu_cyclenum)
 {

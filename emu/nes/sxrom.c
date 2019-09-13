@@ -72,7 +72,7 @@ remap (sxrom_t * cart)
 			cart->ppu->bus,
 			0x0000,
 			0x2000,
-			((cart->mmc1.reg1 & ~1) * 0x1000) % cart->chrom->size);
+			(cart->mmc1.reg1.banksel8k * 0x2000) % cart->chrom->size);
 		break;
 	case MMC1_CHR_SWITCHING_4K:
 		memory_map(
@@ -80,13 +80,13 @@ remap (sxrom_t * cart)
 			cart->ppu->bus,
 			0x0000,
 			0x1000,
-			(cart->mmc1.reg1 * 0x1000) % cart->chrom->size);
+			(cart->mmc1.reg1.banksel4k * 0x1000) % cart->chrom->size);
 		memory_map(
 			cart->chrom,
 			cart->ppu->bus,
 			0x1000,
 			0x1000,
-			(cart->mmc1.reg2 * 0x1000) % cart->chrom->size);
+			(cart->mmc1.reg2.banksel4k * 0x1000) % cart->chrom->size);
 		break;
 	}
 
@@ -174,11 +174,11 @@ sxrom_setup (rominfo_t * info)
 	sxrom_t * cart = rc_alloc(sizeof(sxrom_t), deinit);
 	reset_manager_add_device(info->rm, cart, reset);
 
-	cart->cpu = info->cpu;
-	cart->ppu = info->ppu;
+	cart->cpu    = info->cpu;
+	cart->ppu    = info->ppu;
 	cart->prgrom = rc_retain((memory_t * nonnull)info->prgrom);
-	cart->chrom = rc_retain((memory_t * nonnull)info->chrom);
-	cart->vram = rc_retain((memory_t * nonnull)info->vram);
+	cart->chrom  = rc_retain((memory_t * nonnull)info->chrom);
+	cart->vram   = rc_retain((memory_t * nonnull)info->vram);
 
 	if (info->wram) {
 		cart->wram = rc_retain((memory_t * nonnull)info->wram);
