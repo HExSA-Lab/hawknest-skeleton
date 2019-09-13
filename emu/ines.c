@@ -114,6 +114,10 @@ setup_common (reset_manager_t * nonnull rm,
 	}
 	memory_map(ram, cpu->bus, 0x0000, (uint16_t)ram->size, 0x0000);
 
+	// the 8 pages of NES system memory from 0x0000 - 0x07ff 
+	// was mirrored at 0x800, 0x1000, and 0x1800
+	memory_map_mirroring(ram, cpu->bus, 0x0800, 0x0800, 0x0000, 3);
+
 	if (io_reg_setup(rm, cpu, cscheme_path)) {
 		goto release_ram;
 	}
