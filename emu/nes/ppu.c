@@ -132,7 +132,7 @@ static inline void
 inc_vram_addr_rw (ppu_t * nonnull ppu)
 {
 	if (!(ppu->bg_en || ppu->sprite_en) || (ppu->slnum >= 240 && ppu->slnum != 261)) {
-		ppu->vram_addr += ppu->vram_addr_inc ? 32 : 1;
+		ppu->vram_addr = (ppu->vram_addr + (ppu->vram_addr_inc ? 32 : 1)) % 0x4000;
 		return;
 	}
 	inc_coarse_x(ppu);
@@ -666,7 +666,11 @@ read (ppu_t * nonnull ppu, uint16_t addr)
 			val = *palloc;
 		}
 		else {
-			val = membus_read(ppu->bus, ppu->vram_addr);
+			val = ppu->vram_read_buf; // pass back the buffered value
+			if (ppu->vram_addr >= 0x3000 && ppu->vram_addr < 0x3F00) 
+				ppu->vram_read_buf = membus_read(ppu->bus, ppu->vram_addr - 0x1000);
+			else 
+				ppu->vram_read_buf = membus_read(ppu->bus, ppu->vram_addr); // update internal buffer
 		}
 		inc_vram_addr_rw(ppu);
 		break;
@@ -726,12 +730,13 @@ write (ppu_t * nonnull ppu, uint16_t addr, uint8_t val)
 		break;
 
 	case 6: // PPUADDR
-		if (!ppu->write_toggle) {
-			ppu->tmp_vram_addr &= ~0x3F00;
-			ppu->tmp_vram_addr |= (val & 0x3F) << 8;
+		if (!ppu->write_toggle) { // hi byte
+			ppu->tmp_vram_addr &= 0x00FF;
+			// we mask with 0x3f to achieve mirroring of the 0x0000 - 0x3fff region of VRAM
+			ppu->tmp_vram_addr |= ((uint16_t)(val & 0x3F)) << 8; 
 		}
-		else {
-			ppu->tmp_vram_addr &= ~0xFF;
+		else { // lo byte
+			ppu->tmp_vram_addr &= 0xFF00;
 			ppu->tmp_vram_addr |= val;
 			ppu->vram_addr = ppu->tmp_vram_addr;
 		}
@@ -743,7 +748,11 @@ write (ppu_t * nonnull ppu, uint16_t addr, uint8_t val)
 			*palloc = val;
 		}
 		else {
-			membus_write(ppu->bus, ppu->vram_addr, val);
+			// this is a mirror
+			if (ppu->vram_addr >= 0x3000 && ppu->vram_addr < 0x3F00) 
+				membus_write(ppu->bus, ppu->vram_addr - 0x1000, val);
+			else
+				membus_write(ppu->bus, ppu->vram_addr, val);
 		}
 
 		inc_vram_addr_rw(ppu);
@@ -784,6 +793,7 @@ reset (ppu_t * nonnull ppu)
 
 	ppu->vram_addr     = 0;
 	ppu->tmp_vram_addr = 0;
+	ppu->vram_read_buf = 0;
 
 	ppu->fine_xscroll = 0;
 

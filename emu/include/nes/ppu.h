@@ -115,6 +115,9 @@ typedef struct ppu {
 		} PACKED;
 		uint16_t vram_addr;
 	};
+
+	uint8_t vram_read_buf;
+
 	union {
 		struct {
 			uint8_t tmp_coarse_xscroll        : 5;
