@@ -51,12 +51,12 @@ static inline uint16_t
 buggy_read16 (mos6502_t * cpu, uint16_t addr)
 {
 	uint16_t first = addr;
-	uint16_t secnd = (addr & 0xFF00) | (uint16_t)((uint8_t)addr + 1);
-
+    uint16_t msb = addr & 0xff00;
+    uint16_t lsb = ((addr & 0xff) == 0xff) ? 0 : ((addr & 0xff) + 1);
+	uint16_t secnd = msb | lsb;
 	uint16_t lo = (uint16_t)read8(cpu, first);
 	uint16_t hi = (uint16_t)read8(cpu, secnd);
 	uint16_t val = (uint16_t)(hi << 8) | lo;
-
 	return val;
 }
 
