@@ -205,7 +205,7 @@ $(EMU_OBJ): $(EMU_BUILD_DIR)/%.o: $(EMU_SRC_DIR)/%.c
 $(EMU): $(EMU_OBJ)
 	@echo "Linking $@..."
 	@mkdir -p $(dir $@)
-	@$(CC_COMMAND) $(CC_LIB_FLAGS) $^ -o $@
+	@$(CC_COMMAND) $^ -o $@ $(CC_LIB_FLAGS)
 
 $(LIB_CASM) $(TEST_CASM): $(BUILD_DIR)/%.s: %.c
 	@echo "$@ <- $<"
