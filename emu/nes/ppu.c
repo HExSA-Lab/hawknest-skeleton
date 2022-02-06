@@ -699,7 +699,7 @@ write (ppu_t * nonnull ppu, uint16_t addr, uint8_t val)
 
 		bool old_nmi_en = ppu->nmi_en;
 		ppu->nmi_en = !!(val & 0x80);
-		if (ppu->nmi_en != old_nmi_en && ppu->vblank) {
+		if (ppu->nmi_en && !old_nmi_en && ppu->vblank) {
 			mos6502_raise_nmi(ppu->cpu);
 		}
 
