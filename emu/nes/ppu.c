@@ -434,27 +434,26 @@ sprite_memfetch (ppu_t * nonnull ppu)
 	size_t spritenum = (ppu->dotnum - 257) / 8;
 	ppu_sprite_t sprite = ppu->eval_sprites[spritenum];
 
-	uint16_t bmp_addr;
-	uint8_t tile = sprite.tile;
-	if (ppu->spritesize) {
-		bmp_addr = 0x1000 * (tile & 0x1);
-		tile &= ~0x1;
-	}
-	else {
-		bmp_addr = ppu->sprite_chr_baseaddr ? 0x1000 : 0x0000;
-	}
-
-	uint8_t y_offset = ppu->coarse_yscroll * 8 + ppu->fine_yscroll - 1 - sprite.ypos;
-	if (ppu->spritesize == PPU_SPRITESIZE_8x16) {
-		tile += (y_offset / 8) ^ sprite.attr.verti_flipped;
-		y_offset %= 8;
-	}
-
+	uint16_t y_offset = ppu->slnum - sprite.ypos;
 	if (sprite.attr.verti_flipped) {
-		y_offset = 7 - y_offset;
+		uint16_t height = ppu->spritesize == PPU_SPRITESIZE_8x16 ? 16 : 8;
+		y_offset = (height - 1) - y_offset;
 	}
 
-	bmp_addr += tile * 16 + y_offset;
+	bool hi_base;
+	uint16_t tile = sprite.tile;
+	if (ppu->spritesize == PPU_SPRITESIZE_8x16) {
+		if (y_offset >= 8) {
+			y_offset += 8;
+		}
+		hi_base = tile & 1;
+		tile &= ~1;
+	} else {
+		hi_base = ppu->sprite_chr_baseaddr == PPU_CHR_BASEADDR_1000;
+	}
+
+	uint16_t base = hi_base ? 0x1000 : 0x0000;
+	uint16_t bmp_addr = base | (tile * 16 + y_offset);
 
 	switch ((ppu->dotnum - 1) % 8) {
 	case 1:
