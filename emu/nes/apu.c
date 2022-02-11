@@ -139,7 +139,8 @@ static void apu_frame_tick(apu_t *apu) {
 		apu_noise_half_frame(&apu->noise, &apu->regs.noise);
 	}
 
-	SDL_QueueAudio(apu->dev, (void*)apu->samples, apu->nsamples * sizeof(float));
+	SDL_QueueAudio(apu->dev, apu->samples, apu->nsamples * sizeof(float));
+	
 	apu->nsamples = 0;
 }
 
@@ -303,11 +304,14 @@ apu_new(reset_manager_t *rm, mos6502_t *cpu)
 	spec.freq = 44100;
 	spec.format = AUDIO_F32SYS;
 	spec.channels = 1;
+	spec.callback = NULL;
 	apu->dev = SDL_OpenAudioDevice(NULL, 0, &spec, NULL, 0);
 	if (!apu->dev) {
 		ERROR_PRINT("Could not open audio device: %s", SDL_GetError());
 		goto deverror;
 	}
+
+	SDL_PauseAudioDevice(apu->dev, 0);
 	
 	return apu;
 	
