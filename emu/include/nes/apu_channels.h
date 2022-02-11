@@ -39,7 +39,7 @@ typedef struct apu_channel_noise {
 } apu_channel_noise_t;
 
 typedef struct apu_dmc_mem_reader {
-	struct membus * nonnull /*strong*/ bus;
+	struct membus * nonnull /*unowned*/ bus;
 	uint16_t sample_start;
 	uint16_t addr;
 	uint16_t sample_len;
@@ -68,7 +68,7 @@ void apu_pulse_reload_sweep(apu_channel_pulse_t *ch);
 bool apu_pulse_is_active(const apu_channel_pulse_t *ch);
 void apu_pulse_deactivate(apu_channel_pulse_t *ch);
 void apu_pulse_set_lc(apu_channel_pulse_t *ch, uint8_t val);
-void apu_pulse_quarter_fraxdme(apu_channel_pulse_t *ch, const apu_reg_pulse_t *reg);
+void apu_pulse_quarter_frame(apu_channel_pulse_t *ch, const apu_reg_pulse_t *reg);
 void apu_pulse_half_frame(apu_channel_pulse_t *ch, apu_reg_pulse_t *reg);
 void apu_pulse_tick(apu_channel_pulse_t *ch, const apu_reg_pulse_t *reg);
 uint8_t apu_pulse_sample(const apu_channel_pulse_t *ch, const apu_reg_pulse_t *reg);

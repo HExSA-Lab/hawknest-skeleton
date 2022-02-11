@@ -86,7 +86,7 @@ typedef union apu_reg_control_status {
 typedef struct apu_reg_frame_counter {
 	uint8_t unused: 6;
 	bool disable_frame_irq: 1;
-	bool five_frame_sequence: 1;
+	bool five_step_sequence: 1;
 } apu_reg_frame_counter_t;
 
 typedef struct apu_regs {
