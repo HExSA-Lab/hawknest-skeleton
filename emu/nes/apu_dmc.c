@@ -71,7 +71,7 @@ void apu_dmc_tick(apu_channel_dmc_t *ch, const apu_reg_dmc_t *reg) {
 	ch->output_unit.shift_reg = ch->sample_buffer;
 	ch->output_unit.bits_remaining = 8;
 	ch->sample_buffer = read_byte(&ch->mem_reader, reg);
-	ch->output_unit.silence = ch->mem_reader.bytes_remaining != 0;
+	ch->output_unit.silence = ch->mem_reader.bytes_remaining == 0;
 }
 
 inline uint8_t apu_dmc_sample(const apu_channel_dmc_t *ch, const apu_reg_dmc_t *reg) {
