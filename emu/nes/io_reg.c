@@ -28,8 +28,8 @@ set_strobe (io_reg_t * io, bool val)
 	io->controller_strobe = val;
 }
 
-static uint8_t
-read (io_reg_t * io, uint16_t addr, uint8_t * lanemask)
+uint8_t
+io_reg_mem_read (io_reg_t * io, uint16_t addr, uint8_t * lanemask)
 {
 	switch (addr) {
 	case 0x16:
@@ -59,8 +59,8 @@ read (io_reg_t * io, uint16_t addr, uint8_t * lanemask)
 	}
 }
 
-static void
-write (io_reg_t * io, uint16_t addr, uint8_t val)
+void
+io_reg_mem_write (io_reg_t * io, uint16_t addr, uint8_t val)
 {
 	switch (addr) {
 	case 0x16:
@@ -153,25 +153,4 @@ close_f:
 release_io:
 	rc_release(io);
 	return retval;
-}
-
-int
-io_reg_setup (reset_manager_t * rm, mos6502_t * cpu, const char * cscheme_path)
-{
-	int retcode = -1;
-
-	io_reg_t * io = io_reg_new(rm, cpu, cscheme_path);
-	if (!io) {
-		ERROR_PRINT("Couldn't create an IO register device");
-		goto ret;
-	}
-
-	membus_set_read_handler(cpu->bus, 0x40, io, 0, read);
-	membus_set_write_handler(cpu->bus, 0x40, io, 0, write);
-
-	retcode = 0;
-	rc_release(io);
-
-ret:
-	return retcode;
 }

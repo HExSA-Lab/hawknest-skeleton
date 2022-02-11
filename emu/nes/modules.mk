@@ -8,4 +8,5 @@ EMU_SRC += nes/io_reg.c \
 	   nes/apu_triangle.c \
 	   nes/apu_noise.c \
 	   nes/apu_dmc.c \
-	   nes/apu.c
+	   nes/apu.c \
+	   nes/pageforty.c

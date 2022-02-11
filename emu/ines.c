@@ -4,7 +4,7 @@
 #include <fileio.h>
 #include <nes/nrom.h>
 #include <nes/sxrom.h>
-#include <nes/io_reg.h>
+#include <nes/pageforty.h>
 
 #include <stdint.h>
 #include <string.h>
@@ -118,7 +118,7 @@ setup_common (reset_manager_t * nonnull rm,
 	// was mirrored at 0x800, 0x1000, and 0x1800
 	memory_map_mirroring(ram, cpu->bus, 0x0800, 0x0800, 0x0000, 3);
 
-	if (io_reg_setup(rm, cpu, cscheme_path)) {
+	if (pageforty_setup(rm, cpu, cscheme_path)) {
 		goto release_ram;
 	}
 

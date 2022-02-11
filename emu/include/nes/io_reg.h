@@ -39,9 +39,6 @@ typedef struct io_reg {
 // registers we implement
 io_reg_t * nullable io_reg_new (reset_manager_t * nonnull rm, mos6502_t * nonnull cpu, const char * nonnull cscheme_path);
 
-// Maps an `io_reg_t` to the appropriate part of a CPU memory bus
-void io_reg_map (io_reg_t * nonnull io, membus_t * nonnull bus);
+uint8_t io_reg_mem_read (io_reg_t * io, uint16_t addr, uint8_t * lanemask);
 
-// Creates a new `io_reg_t` via `io_reg_new`, and then maps it via `io_reg_map`
-// to `cpu->bus`
-int io_reg_setup (reset_manager_t * nonnull rm, mos6502_t * nonnull cpu, const char * nonnull cscheme_path);
+void io_reg_mem_write (io_reg_t * io, uint16_t addr, uint8_t val);
