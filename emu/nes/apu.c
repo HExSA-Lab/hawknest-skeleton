@@ -12,6 +12,7 @@
 
 #define SAMPLE_COUNT 65536
 #define QUARTER_FRAME (358000 / 4)
+#define ABOUT_44_1_KHZ 487
 
 static const uint8_t length_counters[32] = {
     10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14,
@@ -105,7 +106,9 @@ static void apu_cycle_tick(apu_t *apu) {
 	apu->cycle_countdown = MOS6502_CLKDIVISOR;
 
 	if (apu->dmc.mem_reader.irq_flag || apu->frame_counter.irq_flag) {
-		mos6502_raise_irq(apu->cpu);
+		if (!apu->cpu->p.i) {
+			mos6502_raise_irq(apu->cpu);
+		}
 	}
 
 	apu_triangle_tick(&apu->triangle, &apu->regs.triangle);
@@ -141,7 +144,7 @@ static void apu_frame_tick(apu_t *apu) {
 }
 
 static void apu_sample_tick(apu_t *apu) {
-	apu->sample_countdown = 487; // close enough
+	apu->sample_countdown = ABOUT_44_1_KHZ;
 	apu_push_sample(apu, apu_mix_sample(apu));
 }
 
@@ -266,11 +269,12 @@ static void reset(apu_t * nonnull apu) {
 	
 	ZERO(apu->frame_counter);
 
-	ZERO(apu->cycle_countdown);
-	ZERO(apu->frame_countdown);
-	ZERO(apu->sample_countdown);
 	ZERO(apu->even_cycle);
 	ZERO(apu->reg_bytes);
+
+	apu->cycle_countdown = MOS6502_CLKDIVISOR;
+	apu->frame_countdown = QUARTER_FRAME;
+	apu->sample_countdown = ABOUT_44_1_KHZ;
 
 	#undef ZERO
 }
