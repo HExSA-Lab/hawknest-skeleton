@@ -1,9 +1,9 @@
-#!/usr/bin/python2
+#!/usr/bin/env python3
 import os, subprocess, string, sys, tempfile, shutil, signal, inspect
 from getopt import getopt
 from optparse import OptionParser
-import multiprocessing as mp
-import Queue
+import threading
+import queue
 import pexpect
 import re
 import filecmp
@@ -265,10 +265,11 @@ def quit_now(test):
     test.terminate()
     sys.exit()
 
-def run_test(test, queue):
-    signal.signal(signal.SIGTERM, lambda signum, frame: quit_now(test))
-   # create a new process group so we can easily kill all children of this proc
-    os.setpgrp()
+def run_test(test, out_queue):
+    #signal.signal(signal.SIGTERM, lambda signum, frame: quit_now(test))
+    # create a new process group so we can easily kill all children of this proc
+    #os.setpgrp()
+
     try:
         test.run()
     except Failure as f:
@@ -282,7 +283,7 @@ def run_test(test, queue):
         # Don't print the stack trace, students find it unreadable
         traceback.print_exception(type, value, None, file=sys.stdout)
     finally:
-        queue.put(test, block=True)
+        out_queue.put(test)
 
 
 def main(build_test, all_tests):
@@ -354,34 +355,32 @@ def main(build_test, all_tests):
         log.flush()
 
         # run the test in a new process
-        # KCH: Note that this deadlocks with Python 3 implementation
-        # of MP Queues, still not sure why, but suspect forking semantics
-        result_queue = mp.Queue()
-        p = mp.Process(target=run_test, args=(test,result_queue))
+        done_queue = queue.Queue()
+        p = threading.Thread(target=run_test, args=(test, done_queue))
         p.start()
 
         if options.notimeout or test.timeout is None:
             timeout = None
         else:
             timeout = test.timeout * float(options.factor)
+
         try:
             # wait for the test result
-            result = result_queue.get(block=True, timeout=timeout)
+            result = done_queue.get(block=True, timeout=timeout)
             p.join()
-        except Queue.Empty:
+        except queue.Empty:
             test.fail("Timelimit (" + str(timeout) + "s) exceeded (your program likely did not terminate)")
             result = test
         except KeyboardInterrupt:
             test.fail("User interrupted test")
             result = test
             quitnow = True
-        finally:
-            try:
-                os.kill(p.pid, signal.SIGTERM)
-            except OSError as e:
-                pass
+            # try:
+                # os.kill(p.pid, signal.SIGTERM)
+            # except OSError as e:
+                # pass
 
-        result_queue.close()
+        #done_queue.close()
 
         try:
             result.logfd = log
