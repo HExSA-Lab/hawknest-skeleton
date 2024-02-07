@@ -17,7 +17,7 @@ typedef union stat_reg {
 		bool i : 1; // interrupt disable
 		bool d : 1; // decimal mode
 		bool b : 1; // break command
-		bool   : 1;   // unused
+		bool u : 1; // unused
 		bool v : 1; // overflow flag
 		bool n : 1; // negative flag
 	};

@@ -344,6 +344,17 @@ cmd_regs (mos6502_t * cpu, char * args)
 	INFO_PRINT("   X -> 0x%02x", cpu->x);
 	INFO_PRINT("   Y -> 0x%02x", cpu->y);
 	INFO_PRINT("   P -> 0x%02x", cpu->p.val);
+    INFO_PRINT("       |%1x.%1x.%1x.%1x  %1x.%1x.%1x.%1x|", 
+            cpu->p.n,
+            cpu->p.v,
+            cpu->p.u,
+            cpu->p.b,
+            cpu->p.d,
+            cpu->p.i,
+            cpu->p.z,
+            cpu->p.c);
+    INFO_PRINT("        | |   |  | | | |");
+    INFO_PRINT("        n v _ b  d i z c"); 
 	return 0;
 }
 
