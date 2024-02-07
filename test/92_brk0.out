@@ -4,7 +4,7 @@ SP: 0x00fd
  A: 0x00
  X: 0x00
  Y: 0x00
- P: 0x04
+ P: 0x34
   $0000: ff ff ff ff
   $0004: ff ff ff ff
   $0008: ff ff ff ff
