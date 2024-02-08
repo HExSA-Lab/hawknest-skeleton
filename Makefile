@@ -6,7 +6,7 @@ CLANG_EXEC = clang
 GCC_EXEC = gcc
 
 PROJECT_NAME=p1
-PROJECT_SERVER="http://subutai.cs.iit.edu"
+PROJECT_SERVER="http://18.223.126.137"
 PROJECT_PORT=3000
 
 # clang warnings we ignore
